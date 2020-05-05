@@ -1,7 +1,11 @@
 import smtplib
 
 from email.mime.text import MIMEText
+
 from selenium import webdriver
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+from apscheduler.schedulers.blocking import BlockingScheduler
+
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
@@ -12,6 +16,8 @@ browser = webdriver.Chrome("C:\\workspace\\nintendo\\chromedriver.exe", options=
 
 account_path = "C:\\workspace\\nintendo\\account_info.txt"
 email_address_path = "C:\\workspace\\nintendo\\mail_address.txt"
+
+scheduler = BlockingScheduler()
 
 
 def read_account(path):
@@ -115,13 +121,25 @@ def find_nintendo_switch():
     for idx, url in enumerate(urls):
         find_common(idx + 1, url)
 
-    browser.quit()
+    # browser.quit()
     return ""
 
 
-# send_email("닌텐도 메일 알리미", "테스트입니다.")
-nintendo_link = find_nintendo_switch()
-if nintendo_link:
-    send_email("!!!! 닌텐도 스위치 재고떴다 !!!!", nintendo_link)
-else:
-    print("모든곳에서 재고가 없네요..")
+def start_crawling():
+    nintendo_link = find_nintendo_switch()
+    if nintendo_link:
+        send_email("!!!! 닌텐도 스위치 재고떴다 !!!!", nintendo_link)
+    else:
+        print("모든곳에서 재고가 없네요..")
+
+
+def listener(event):
+    if event.exception:
+        print("The job crashed")
+    else:
+        print("The job worked")
+
+
+scheduler.add_job(start_crawling, 'interval', minutes=1)
+scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+scheduler.start()
