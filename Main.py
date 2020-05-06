@@ -133,7 +133,7 @@ def listener(event):
         print("The job worked")
 
 
-start_crawling()
-# scheduler.add_job(start_crawling, 'interval', minutes=1)
-# scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
-# scheduler.start()
+# start_crawling()
+scheduler.add_job(start_crawling, 'interval', minutes=1)
+scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+scheduler.start()
