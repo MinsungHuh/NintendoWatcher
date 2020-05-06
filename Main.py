@@ -1,4 +1,5 @@
 import smtplib
+import os
 
 from email.mime.text import MIMEText
 
@@ -6,16 +7,15 @@ from selenium import webdriver
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
-options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, "
-                     "like Gecko) Chrome/81.0.3163.100 Safari/537.36")
 
-browser = webdriver.Chrome("C:\\workspace\\nintendo\\chromedriver.exe", options=options)
+dirName = os.path.dirname(__file__)
+account_path = os.path.join(dirName, "account_info.txt")
+email_address_path = os.path.join(dirName, "mail_address.txt")
+real_path = os.path.join(dirName, "chromedriver")
 
-account_path = "C:\\workspace\\nintendo\\account_info.txt"
-email_address_path = "C:\\workspace\\nintendo\\mail_address.txt"
+browser = webdriver.Chrome(real_path, options=options)
 
 scheduler = BlockingScheduler()
 
@@ -65,34 +65,29 @@ def send_email(title, msg):
 
 
 def find_common(index, url):
-    print("\n")
     print('index : %d, url : %s' % (index, url))
-    print("\n")
     browser.get(url=url)
 
     if url.__contains__("himart"):
-        print("himart")
-        item_list = browser.find_elements_by_xpath(".//ul[@id='productList']")[0].find_elements_by_tag_name("li")
+        item_list = browser.find_elements_by_xpath(".//ul[@id='productList']")
 
-        for item in item_list:
-            sold_out = item.find_elements_by_xpath(".//a[@class='prdLink']/div[@class='soldout']/span")[0].text
-            link = item.find_elements_by_xpath(".//a[@class='prdLink']")[0].get_attribute("href")
-            print("sold_out : %s" % sold_out)
-            print("link : %s" % link)
+        if item_list.__len__() > 0:
+            item_list = item_list[0].find_elements_by_tag_name("li")
 
-            if sold_out is None or sold_out != "SOLD OUT":
-                return link
+            for item in item_list:
+                sold_out = item.find_elements_by_xpath(".//a[@class='prdLink']/div[@class='soldout']/span")[0].text
+                link = item.find_elements_by_xpath(".//a[@class='prdLink']")[0].get_attribute("href")
+
+                if sold_out is None or sold_out != "SOLD OUT":
+                    return link
 
     elif url.__contains__("osgame"):
-        print("onestop game")
         item_list = browser.find_elements_by_xpath(".//div[@class='PJ_good_table']")
 
         for item in item_list:
             link = str(item.get_attribute("onclick")).split("../")[1]
             link = "http://www.osgame.co.kr/" + link
             sold_out = item.find_elements_by_class_name("item_price")[0].text
-            print("sold_out : %s" % sold_out)
-            print("link : %s" % link)
 
             if sold_out != '품절':
                 return link
@@ -103,8 +98,6 @@ def find_common(index, url):
         for item in item_list:
             price = item.find_elements_by_xpath(".//li[@class='prd-price']")[0].text
             link = item.find_elements_by_xpath(".//dt[@class='thumb']/a")[0].get_attribute("href")
-            print("sold out : %s" % price)
-            print("link : %s" % link)
 
             if price != "Sold Out":
                 return link
@@ -129,6 +122,7 @@ def start_crawling():
     nintendo_link = find_nintendo_switch()
     if nintendo_link:
         send_email("!!!! 닌텐도 스위치 재고떴다 !!!!", nintendo_link)
+        scheduler.remove_all_jobs()
     else:
         print("모든곳에서 재고가 없네요..")
 
