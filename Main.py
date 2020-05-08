@@ -75,10 +75,9 @@ def find_common(index, url):
             item_list = item_list[0].find_elements_by_tag_name("li")
 
             for item in item_list:
-                sold_out = item.find_elements_by_xpath(".//a[@class='prdLink']/div[@class='soldout']/span")[0].text
+                sold_out = item.find_elements_by_xpath(".//a[@class='prdLink']/div[@class='soldout']")
                 link = item.find_elements_by_xpath(".//a[@class='prdLink']")[0].get_attribute("href")
-
-                if sold_out is None or sold_out != "SOLD OUT":
+                if not sold_out:
                     return link
 
     elif url.__contains__("osgame"):
@@ -102,20 +101,20 @@ def find_common(index, url):
             if price != "Sold Out":
                 return link
 
-        return ""
-
 
 def find_nintendo_switch():
-    urls = ["http://www.nnmarket.co.kr/shop/shopbrand.html?type=M&xcode=025&mcode=001",
+    urls = ["http://www.e-himart.co.kr/app/display/showDisplayCategory?dispNo=1014020700",
+            "http://www.nnmarket.co.kr/shop/shopbrand.html?type=M&xcode=025&mcode=001",
             "http://www.gamewoori.com/shop/shopbrand.html?type=M&xcode=005&mcode=001",
-            "http://www.e-himart.co.kr/app/display/showDisplayCategory?dispNo=1014020700",
             "http://www.osgame.co.kr/goods/goods_list.php?cateCd=004001"]
 
+    link = ""
     for idx, url in enumerate(urls):
-        find_common(idx + 1, url)
+        link = find_common(idx + 1, url)
+        if link:
+            break
 
-    # browser.quit()
-    return ""
+    return link
 
 
 def start_crawling():
@@ -134,6 +133,7 @@ def listener(event):
         print("The job worked")
 
 
+# start_crawling()
 scheduler.add_job(start_crawling, 'interval', seconds=30)
 scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 scheduler.start()
